@@ -132,7 +132,7 @@ export async function updateVolunteer(email: string, volunteer: Volunteer): Prom
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row) => row[2] === email);
+    const rowIndex = rows.findIndex((row: any[]) => row[2] === email);
 
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.update({
@@ -179,7 +179,7 @@ export async function deleteVolunteer(email: string): Promise<boolean> {
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row) => row[2] === email);
+    const rowIndex = rows.findIndex((row: any[]) => row[2] === email);
 
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.clear({
@@ -208,8 +208,8 @@ export async function getShifts(email: string): Promise<Shift[]> {
 
     const rows = response.data.values || [];
     return rows
-      .filter((row) => row[1] === email)
-      .map((row) => ({
+      .filter((row: any[]) => row[1] === email)
+      .map((row: any[]) => ({
         date: row[0] || '',
         volunteerEmail: row[1] || '',
         status: row[2] as 'proposed' | 'approved' | 'assigned',
@@ -291,7 +291,7 @@ export async function approveShift(date: string, email: string): Promise<boolean
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row) => row[0] === date && row[1] === email);
+    const rowIndex = rows.findIndex((row: any[]) => row[0] === date && row[1] === email);
 
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.update({
@@ -328,7 +328,7 @@ export async function rejectShift(date: string, email: string): Promise<boolean>
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row) => row[0] === date && row[1] === email);
+    const rowIndex = rows.findIndex((row: any[]) => row[0] === date && row[1] === email);
 
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.clear({
