@@ -13,15 +13,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     try {
       const volunteers = await getVolunteers();
-      const existingVolunteer = volunteers.find(v => v.email === session.user.email);
+      const userEmail = session.user?.email;
+      if (!userEmail) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      const existingVolunteer = volunteers.find(v => v.email === userEmail);
       
       // If user doesn't exist or exists but is not a manager
       if (!existingVolunteer) {
         // Add first user as manager
         await addVolunteer({
-          name: session.user.name || 'מנהל',
+          name: session.user?.name || 'מנהל',
           phone: '',
-          email: session.user.email,
+          email: userEmail,
           monday: true,
           tuesday: true,
           wednesday: true,
@@ -32,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else if (!existingVolunteer.isManager && volunteers.length === 1) {
         // If they're the only volunteer and not a manager, make them a manager
         existingVolunteer.isManager = true;
-        await updateVolunteer(session.user.email, existingVolunteer);
+        await updateVolunteer(userEmail, existingVolunteer);
       }
       
       return res.status(200).json({ success: true });
