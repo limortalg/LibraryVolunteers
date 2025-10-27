@@ -59,16 +59,6 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      <div style={{
-        backgroundColor: '#ff9800',
-        color: 'white',
-        padding: '8px',
-        textAlign: 'center',
-        fontSize: '0.9rem',
-        fontWeight: '600'
-      }}>
-        ⚠️ מצב פיתוח - נתונים זמניים (לא נשמרים ב-Google Sheets)
-      </div>
       <header style={{
         backgroundColor: '#1976d2',
         color: 'white',
