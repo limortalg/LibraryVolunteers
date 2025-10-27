@@ -121,9 +121,11 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
     }
     
     try {
+      // Remove email from newVolunteer to avoid duplicate, then add it back separately
+      const { email: _, ...rest } = newVolunteer;
       await axios.put('/api/volunteers', {
+        ...rest,
         email: editingVolunteer,
-        ...newVolunteer,
       });
       toast.success('המתנדב עודכן בהצלחה');
       setEditingVolunteer(null);
