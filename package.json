@@ -1,0 +1,33 @@
+{
+  "name": "library-shifts-manager",
+  "version": "1.0.0",
+  "description": "מערכת ניהול משמרות ספריה מבוססת Google Sheets",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup-sheets": "node scripts/create-sheets.js"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "googleapis": "^126.0.0",
+    "next-auth": "^4.24.0",
+    "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.0",
+    "axios": "^1.6.0",
+    "react-calendar": "^4.8.0",
+    "react-hot-toast": "^2.4.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.2.0",
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^14.0.0"
+  }
+}

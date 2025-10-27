@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/notifications/weekly",
+      "schedule": "0 8 * * 0"
+    },
+    {
+      "path": "/api/notifications/monthly",
+      "schedule": "0 0 1 * *"
+    }
+  ]
+}
+
