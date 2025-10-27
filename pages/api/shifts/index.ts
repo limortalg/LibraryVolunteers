@@ -11,14 +11,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    const isUserManager = await isManager(session.user.email);
+    const userEmail = session.user?.email;
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const isUserManager = await isManager(userEmail);
     const shifts = isUserManager 
       ? await getAllShifts() 
-      : await getShifts(session.user.email);
+      : await getShifts(userEmail);
     return res.status(200).json(shifts);
   }
 
   if (req.method === 'POST') {
+    const userEmail = session.user?.email;
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const { action, date, dates } = req.body;
 
     if (action === 'propose') {
@@ -26,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const datesToPropose = dates || [date];
       
       const results = await Promise.all(
-        datesToPropose.map((d: string) => proposeShift(session.user.email, d))
+        datesToPropose.map((d: string) => proposeShift(userEmail, d))
       );
       
       const success = results.every(r => r);
@@ -34,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (action === 'approve') {
-      const isUserManager = await isManager(session.user.email);
+      const isUserManager = await isManager(userEmail);
       if (!isUserManager) {
         return res.status(403).json({ error: 'Only managers can approve shifts' });
       }
@@ -45,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (action === 'reject') {
-      const isUserManager = await isManager(session.user.email);
+      const isUserManager = await isManager(userEmail);
       if (!isUserManager) {
         return res.status(403).json({ error: 'Only managers can reject shifts' });
       }
