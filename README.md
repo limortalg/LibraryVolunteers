@@ -18,23 +18,39 @@
 
 ## התקנה
 
+### לפיתוח מקומי (Development)
+
 להגדרה מפורטת ומדריך מלא, ראה את הקובץ [SETUP.md](./SETUP.md)
 
-### התקנה מהירה:
-
-1. התקן את התלויות:
+**התקנה מהירה:**
 ```bash
 npm install
-```
-
-2. הגדר משתני סביבה ב-`.env.local` (ראה `.env.local.example`)
-
-3. צור אייקונים ל-PWA (192x192 ו-512x512 pixels) והכנס ל-`public/`
-
-4. הפעל את השרת:
-```bash
 npm run dev
 ```
+
+האפליקציה תרוץ בכתובת: http://localhost:3000
+
+### לפריסה לייצור (Production)
+
+למדריך פריסה מפורט כולל הגדרת Google Sheets ו-OAuth, ראה את הקובץ [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+**פריסה מהירה ל-Vercel:**
+```bash
+# התקן Vercel CLI
+npm i -g vercel
+
+# התחבר ל-Vercel
+vercel login
+
+# פרוס
+vercel
+```
+
+**⚠️ חשוב**: לפני הפריסה, הקפד להגדיר:
+1. משתני סביבה (ראה `.env.example`)
+2. Google OAuth credentials
+3. Google Service Account
+4. Google Sheets עם מבנה נכון
 
 ## הגדרת Google Sheets
 
