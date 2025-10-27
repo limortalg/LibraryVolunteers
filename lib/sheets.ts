@@ -54,7 +54,7 @@ export async function getVolunteers(): Promise<Volunteer[]> {
     });
 
     const rows = response.data.values || [];
-    return rows.map((row) => ({
+    return rows.map((row: any[]) => ({
       name: row[0] || '',
       phone: row[1] || '',
       email: row[2] || '',
@@ -233,7 +233,7 @@ export async function getAllShifts(): Promise<Shift[]> {
     });
 
     const rows = response.data.values || [];
-    return rows.map((row) => ({
+    return rows.map((row: any[]) => ({
       date: row[0] || '',
       volunteerEmail: row[1] || '',
       status: row[2] as 'proposed' | 'approved' | 'assigned',
