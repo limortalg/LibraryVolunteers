@@ -9,14 +9,14 @@ let SPREADSHEET_ID = '';
 if (!USE_MOCK_DATA) {
   const auth = new google.auth.GoogleAuth({
     credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim(),
+      private_key: process.env.GOOGLE_PRIVATE_KEY?.trim().replace(/\\n/g, '\n'),
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 
   sheets = google.sheets({ version: 'v4', auth });
-  SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID || '';
+  SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID?.trim() || '';
 }
 
 // Mock data for development
@@ -287,19 +287,24 @@ export async function approveShift(date: string, email: string): Promise<boolean
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Shifts!A:D',
+      range: 'Shifts!A2:D',
     });
 
     const rows = response.data.values || [];
     const rowIndex = rows.findIndex((row: any[]) => row[0] === date && row[1] === email);
 
     if (rowIndex !== -1) {
+      const originalRow = rows[rowIndex];
+      const monthYear = originalRow[3] || '';
+      
+      // rowIndex is 0-based in the data rows (starting from row 2)
+      // So actual spreadsheet row = rowIndex + 2
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Shifts!C${rowIndex + 2}`,
+        range: `Shifts!A${rowIndex + 2}:D${rowIndex + 2}`,
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['approved']],
+          values: [[date, email, 'approved', monthYear]],
         },
       });
       return true;
