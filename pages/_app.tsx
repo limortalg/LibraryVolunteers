@@ -3,6 +3,7 @@ import type { AppProps } from 'next/app';
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+import Head from 'next/head';
 
 export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   useEffect(() => {
@@ -15,10 +16,16 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
   }, []);
 
   return (
-    <SessionProvider session={session}>
-      <Component {...pageProps} />
-      <Toaster position="top-center" />
-    </SessionProvider>
+    <>
+      <Head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>משמרות ספריה</title>
+      </Head>
+      <SessionProvider session={session}>
+        <Component {...pageProps} />
+        <Toaster position="top-center" />
+      </SessionProvider>
+    </>
   );
 }
 

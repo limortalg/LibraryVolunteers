@@ -29,6 +29,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [proposedShifts, setProposedShifts] = useState<Shift[]>([]);
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
+  // assignment is now done directly from the main calendar; no internal date picker
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVolunteer, setEditingVolunteer] = useState<string | null>(null);
   const [newVolunteer, setNewVolunteer] = useState({
@@ -56,6 +57,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
       ]);
       setVolunteers(volunteersRes.data);
       setAllShifts(shiftsRes.data);
+      // Only suggestions (not approved/deleted)
       setProposedShifts(shiftsRes.data.filter((s: Shift) => s.status === 'proposed'));
     } catch (error) {
       toast.error('שגיאה בטעינת הנתונים');
@@ -81,6 +83,10 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
     try {
       await axios.post('/api/volunteers', newVolunteer);
       toast.success('המתנדב נוסף בהצלחה');
+      
+      // Automatically send invite to new volunteer
+      await handleSendInvite(newVolunteer.email);
+      
       setNewVolunteer({
         name: '',
         phone: '',
@@ -223,6 +229,56 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
     }
   };
 
+  // assignment handled via main calendar context menu
+
+  const handleSendMonthlySchedule = async () => {
+    if (!confirm('האם אתה בטוח שברצונך לשלוח לוח זמנים חודשי לכל המתנדבים?')) {
+      return;
+    }
+
+    try {
+      await axios.post('/api/notifications/monthly');
+      toast.success('לוח זמנים חודשי נשלח בהצלחה');
+    } catch (error) {
+      toast.error('שגיאה בשליחת לוח זמנים חודשי');
+    }
+  };
+
+  const handleSendWeeklyReminder = async () => {
+    if (!confirm('האם אתה בטוח שברצונך לשלוח תזכורות שבועיות למתנדבים עם משמרות השבוע?')) {
+      return;
+    }
+
+    try {
+      await axios.post('/api/notifications/weekly');
+      toast.success('תזכורות שבועיות נשלחו בהצלחה');
+    } catch (error) {
+      toast.error('שגיאה בשליחת תזכורות שבועיות');
+    }
+  };
+
+  const handleSendProposalReminder = async () => {
+    if (!confirm('האם אתה בטוח שברצונך לשלוח תזכורת למתנדבים להציע משמרות לחודש הבא?')) {
+      return;
+    }
+
+    try {
+      await axios.post('/api/notifications/proposal-reminder');
+      toast.success('תזכורת להציע משמרות נשלחה בהצלחה');
+    } catch (error) {
+      toast.error('שגיאה בשליחת תזכורת');
+    }
+  };
+
+  const handleSendInvite = async (email: string) => {
+    try {
+      await axios.post('/api/notifications/invite', { email });
+      toast.success('הזמנה נשלחה בהצלחה');
+    } catch (error) {
+      toast.error('שגיאה בשליחת הזמנה');
+    }
+  };
+
   return (
     <div style={{
       backgroundColor: 'white',
@@ -234,20 +290,63 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
       <h2 style={{ marginTop: 0 }}>פאנל מנהל</h2>
 
       <div style={{ marginBottom: '20px' }}>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          style={{
-            backgroundColor: '#1976d2',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            marginBottom: '10px'
-          }}
-        >
-          {showAddForm ? 'ביטול' : 'הוסף מתנדב חדש'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            style={{
+              backgroundColor: '#1976d2',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {showAddForm ? 'ביטול' : 'הוסף מתנדב חדש'}
+          </button>
+
+          <button
+            onClick={handleSendMonthlySchedule}
+            style={{
+              backgroundColor: '#388e3c',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            📅 שלח לוח זמנים חודשי
+          </button>
+
+          <button
+            onClick={handleSendWeeklyReminder}
+            style={{
+              backgroundColor: '#f57c00',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            📬 שלח תזכורות שבועיות
+          </button>
+
+          <button
+            onClick={handleSendProposalReminder}
+            style={{
+              backgroundColor: '#7b1fa2',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            💌 שלח תזכורת להציע משמרות
+          </button>
+        </div>
 
         {(showAddForm || editingVolunteer) && (
           <div style={{
@@ -407,6 +506,20 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
+                    onClick={() => handleSendInvite(volunteer.email)}
+                    disabled={!!editingVolunteer}
+                    style={{
+                      backgroundColor: editingVolunteer ? '#ccc' : '#9c27b0',
+                      color: 'white',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      cursor: editingVolunteer ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    💌 שלח הזמנה
+                  </button>
+                  <button
                     onClick={() => handleEditVolunteer(volunteer)}
                     disabled={!!editingVolunteer}
                     style={{
@@ -443,18 +556,21 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
 
       <div>
         <h3>ניהול משמרות</h3>
-        {allShifts.length === 0 ? (
-          <p>אין משמרות רשומות</p>
+        {/* Assign shift moved to main calendar actions; no inline date picker */}
+
+        <h4>הצעות ממתינות לאישור</h4>
+        {proposedShifts.length === 0 ? (
+          <p>אין הצעות ממתינות</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {allShifts.map((shift, index) => {
+            {proposedShifts.map((shift, index) => {
               const volunteer = volunteers.find(v => v.email === shift.volunteerEmail);
               return (
                 <div
                   key={index}
                   style={{
                     padding: '12px',
-                    backgroundColor: shift.status === 'approved' ? '#d4edda' : '#fff3cd',
+                    backgroundColor: '#fff3cd',
                     borderRadius: '6px',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -463,26 +579,22 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                 >
                   <div>
                     <strong>{volunteer?.name || shift.volunteerEmail}</strong> - {new Date(shift.date).toLocaleDateString('he-IL')}
-                    <span style={{ marginRight: '8px', color: shift.status === 'approved' ? '#155724' : '#856404', fontWeight: 'bold' }}>
-                      [{shift.status === 'approved' ? 'מאושר' : 'מוצע'}]
-                    </span>
+                    <span style={{ marginRight: '8px', color: '#856404', fontWeight: 'bold' }}>[מוצע]</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    {shift.status === 'proposed' && (
-                      <button
-                        onClick={() => handleApproveShift(shift.date, shift.volunteerEmail)}
-                        style={{
-                          backgroundColor: '#4caf50',
-                          color: 'white',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        אישר
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleApproveShift(shift.date, shift.volunteerEmail)}
+                      style={{
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      אישר
+                    </button>
                     <button
                       onClick={() => handleRejectShift(shift.date, shift.volunteerEmail)}
                       style={{

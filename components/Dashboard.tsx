@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Calendar from './Calendar';
 import ManagerPanel from './ManagerPanel';
-import VolunteerProposal from './VolunteerProposal';
+import { addMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 interface Profile {
   email: string;
@@ -57,6 +57,24 @@ export default function Dashboard() {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleApproveShift = async (date: string, volunteerEmail: string) => {
+    try {
+      await axios.post('/api/shifts', { action: 'approve', date, volunteerEmail });
+      setRefreshTrigger(prev => prev + 1);
+    } catch (e) {
+      // no-op UI toast here to keep component lean
+    }
+  };
+
+  const handleRejectShift = async (date: string, volunteerEmail: string) => {
+    try {
+      await axios.post('/api/shifts', { action: 'reject', date, volunteerEmail });
+      setRefreshTrigger(prev => prev + 1);
+    } catch (e) {
+      // no-op
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       <header style={{
@@ -99,7 +117,7 @@ export default function Dashboard() {
       </header>
 
       <main style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-        {profile?.isManager && <ManagerPanel onShiftsChanged={handleShiftsChanged} />}
+        {profile?.isManager && <ManagerPanel key={refreshTrigger} onShiftsChanged={handleShiftsChanged} />}
         
         <div style={{ 
           display: 'flex',
@@ -108,10 +126,31 @@ export default function Dashboard() {
           marginBottom: '20px'
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Calendar key={refreshTrigger} email={profile?.email || ''} showCurrentMonth={true} />
+            <Calendar
+              key={`curr-${refreshTrigger}`}
+              email={profile?.email || ''}
+              showCurrentMonth={true}
+              managerMode={!!profile?.isManager}
+              onApproveShift={handleApproveShift}
+              onRejectShift={handleRejectShift}
+              title="לוח משמרות"
+              onShiftsChanged={handleShiftsChanged}
+            />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <VolunteerProposal key={refreshTrigger} email={profile?.email || ''} onProposalSent={handleProposalSent} />
+            <Calendar
+              key={`next-${refreshTrigger}`}
+              email={profile?.email || ''}
+              showCurrentMonth={false}
+              managerMode={!!profile?.isManager}
+              onApproveShift={handleApproveShift}
+              onRejectShift={handleRejectShift}
+              title="החודש הבא"
+              activeStartDate={startOfMonth(addMonths(new Date(), 1))}
+              minDate={startOfMonth(addMonths(new Date(), 1))}
+              maxDate={endOfMonth(addMonths(new Date(), 1))}
+              onShiftsChanged={handleShiftsChanged}
+            />
           </div>
         </div>
       </main>

@@ -316,6 +316,57 @@ export async function approveShift(date: string, email: string): Promise<boolean
   }
 }
 
+export async function assignShift(date: string, email: string): Promise<boolean> {
+  try {
+    if (USE_MOCK_DATA) {
+      const existing = mockShifts.find(s => s.date === date && s.volunteerEmail === email);
+      const monthYear = new Date(date).toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+      if (existing) {
+        existing.status = 'approved';
+      } else {
+        mockShifts.push({ date, volunteerEmail: email, status: 'approved', monthYear });
+      }
+      return true;
+    }
+
+    // Try to find existing row to update
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Shifts!A2:D',
+    });
+
+    const rows = response.data.values || [];
+    const rowIndex = rows.findIndex((row: any[]) => row[0] === date && row[1] === email);
+    if (rowIndex !== -1) {
+      const monthYear = rows[rowIndex][3] || new Date(date).toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Shifts!A${rowIndex + 2}:D${rowIndex + 2}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[date, email, 'approved', monthYear]],
+        },
+      });
+      return true;
+    }
+
+    // Append new approved shift if not existing
+    const monthYear = new Date(date).toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Shifts!A:D',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[date, email, 'approved', monthYear]],
+      },
+    });
+    return true;
+  } catch (error) {
+    console.error('Error assigning shift:', error);
+    return false;
+  }
+}
+
 export async function rejectShift(date: string, email: string): Promise<boolean> {
   try {
     if (USE_MOCK_DATA) {
@@ -329,11 +380,21 @@ export async function rejectShift(date: string, email: string): Promise<boolean>
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Shifts!A:D',
+      range: 'Shifts!A2:D',
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row: any[]) => row[0] === date && row[1] === email);
+    const normalized = (s: any) => (typeof s === 'string' ? s.trim() : s);
+    // Try exact match, then fallback to ISO normalization
+    let rowIndex = rows.findIndex((row: any[]) => normalized(row[0]) === date && normalized(row[1]) === email);
+    if (rowIndex === -1) {
+      const dateIso = new Date(date).toISOString().slice(0, 10);
+      rowIndex = rows.findIndex((row: any[]) => {
+        const rowDate = typeof row[0] === 'string' ? row[0].trim() : row[0];
+        const rowIso = rowDate ? new Date(rowDate).toISOString().slice(0, 10) : '';
+        return rowIso === dateIso && normalized(row[1]) === email;
+      });
+    }
 
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.clear({

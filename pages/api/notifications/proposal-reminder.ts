@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
-import { sendWeeklyReminders } from '@/lib/notifications';
+import { sendProposalReminder } from '@/lib/notifications';
 import { isManager } from '@/lib/sheets';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ error: 'Only managers can send notifications' });
   }
 
-  const result = await sendWeeklyReminders();
+  const result = await sendProposalReminder();
   return res.status(200).json(result);
 }
 

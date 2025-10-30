@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
-import { getShifts, getAllShifts, proposeShift, approveShift, rejectShift, isManager } from '@/lib/sheets';
+import { getShifts, getAllShifts, proposeShift, approveShift, rejectShift, isManager, assignShift } from '@/lib/sheets';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
@@ -31,9 +31,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { action, date, dates } = req.body;
 
+    const isPastDate = (dateStr: string): boolean => {
+      if (!dateStr) return true;
+      const target = new Date(`${dateStr}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return target < today;
+    };
+
     if (action === 'propose') {
       // Handle both single date (legacy) and multiple dates
       const datesToPropose = dates || [date];
+      if (datesToPropose.some((d: string) => isPastDate(d))) {
+        return res.status(400).json({ error: 'Cannot modify past dates' });
+      }
       
       const results = await Promise.all(
         datesToPropose.map((d: string) => proposeShift(userEmail, d))
@@ -50,7 +61,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const { volunteerEmail } = req.body;
+      if (isPastDate(date)) {
+        return res.status(400).json({ error: 'Cannot modify past dates' });
+      }
       const success = await approveShift(date, volunteerEmail);
+      return res.status(success ? 200 : 500).json({ success });
+    }
+
+    if (action === 'assign') {
+      const isUserManager = await isManager(userEmail);
+      if (!isUserManager) {
+        return res.status(403).json({ error: 'Only managers can assign shifts' });
+      }
+
+      const { volunteerEmail } = req.body;
+      if (isPastDate(date)) {
+        return res.status(400).json({ error: 'Cannot modify past dates' });
+      }
+      const success = await assignShift(date, volunteerEmail);
       return res.status(success ? 200 : 500).json({ success });
     }
 
@@ -61,6 +89,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const { volunteerEmail } = req.body;
+      if (isPastDate(date)) {
+        return res.status(400).json({ error: 'Cannot modify past dates' });
+      }
       const success = await rejectShift(date, volunteerEmail);
       return res.status(success ? 200 : 500).json({ success });
     }
