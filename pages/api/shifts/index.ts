@@ -15,11 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!userEmail) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    
-    const isUserManager = await isManager(userEmail);
-    const shifts = isUserManager 
-      ? await getAllShifts() 
-      : await getShifts(userEmail);
+    // Show all shifts to all authenticated users, so volunteers can see others
+    const shifts = await getAllShifts();
     return res.status(200).json(shifts);
   }
 

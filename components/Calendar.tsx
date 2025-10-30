@@ -71,6 +71,10 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
     return pick < today;
   };
 
+  const hasMyShiftOn = (d: Date) => {
+    return shifts.some(s => s.volunteerEmail === email && isSameDay(new Date(s.date), d));
+  };
+
   const activateShift = async (shift: Shift) => {
     const d = new Date(shift.date);
     if (isPastLocal(d)) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
@@ -348,6 +352,7 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
         ) : selectedDate ? (
           <>
             <span style={{ marginLeft: '8px' }}>{selectedDate.toLocaleDateString('he-IL')}</span>
+            {!hasMyShiftOn(selectedDate) && (
             <button
               onClick={async () => {
                 try {
@@ -366,6 +371,7 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
             >
               הצע משמרת
             </button>
+            )}
             {managerMode && (
               <>
                 <select
