@@ -97,6 +97,11 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
   const deleteShiftDirect = async (shift: Shift) => {
     const d = new Date(shift.date);
     if (isPastLocal(d)) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
+    const volunteerName = getVolunteerName(shift.volunteerEmail);
+    const shiftDate = new Date(shift.date).toLocaleDateString('he-IL');
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את המשמרת של ${volunteerName} בתאריך ${shiftDate}?`)) {
+      return;
+    }
     const iso = toIsoLocal(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
     try {
       await axios.post('/api/shifts', { action: 'reject', date: iso, volunteerEmail: shift.volunteerEmail });
@@ -134,80 +139,41 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center', fontSize: '0.65rem' }}>
-        {/* My shift chip with inline actions */}
+        {/* My shift chip - no inline buttons */}
         {myShifts.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div
-              onClick={() => {
-                const s = myShifts[0];
-                setSelectedDate(new Date(s.date));
-                setSelectedShift(s);
-              }}
-              style={{
-                backgroundColor: myShifts[0].status === 'approved' ? '#4caf50' : '#ff9800',
-                color: 'white',
-                border: '2px solid #1976d2',
-                ...makeChipCommon,
-              }}
-              title={getVolunteerName(myShifts[0].volunteerEmail)}
-            >
-              אני
-            </div>
-            {managerMode && !isPastDay && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'stretch' }}>
-                {myShifts[0].status === 'proposed' && (
-                  <button
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); activateShift(myShifts[0]); }}
-                    title="אשר"
-                    style={{ background: '#4caf50', color: 'white', border: 'none', padding: '0 4px', borderRadius: '4px', lineHeight: '14px', cursor: 'pointer', fontSize: '10px' }}
-                  >✓</button>
-                )}
-                <button
-                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteShiftDirect(myShifts[0]); }}
-                  title="מחק"
-                  style={{ background: '#f44336', color: 'white', border: 'none', padding: '0 4px', borderRadius: '4px', lineHeight: '14px', cursor: 'pointer', fontSize: '10px' }}
-                >🗑</button>
-              </div>
-            )}
+          <div
+            onClick={() => {
+              const s = myShifts[0];
+              setSelectedDate(new Date(s.date));
+              setSelectedShift(s);
+            }}
+            style={{
+              backgroundColor: myShifts[0].status === 'approved' ? '#4caf50' : '#ff9800',
+              color: 'white',
+              border: '2px solid #1976d2',
+              ...makeChipCommon,
+            }}
+            title={getVolunteerName(myShifts[0].volunteerEmail)}
+          >
+            אני
           </div>
         )}
-        {/* Other shifts chips with inline actions */}
+        {/* Other shifts chips - no inline buttons */}
         {otherShifts.slice(0, 2).map((shift, idx) => (
-          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div
-              onClick={() => {
-                setSelectedDate(new Date(shift.date));
-                setSelectedShift(shift);
-              }}
-              style={{
-                backgroundColor: shift.status === 'approved' ? '#81c784' : '#ffb74d',
-                color: 'white',
-                ...makeChipCommon,
-              }}
-              title={getVolunteerName(shift.volunteerEmail)}
-            >
-              {getVolunteerName(shift.volunteerEmail).substring(0, 4)}
-            </div>
-            {managerMode && !isPastDay && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'stretch' }}>
-                {shift.status === 'proposed' && (
-                  <button
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); activateShift(shift); }}
-                    title="אשר"
-                    style={{ background: '#4caf50', color: 'white', border: 'none', padding: '0 4px', borderRadius: '4px', lineHeight: '14px', cursor: 'pointer', fontSize: '10px' }}
-                  >✓</button>
-                )}
-                <button
-                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteShiftDirect(shift); }}
-                  title="מחק"
-                  style={{ background: '#f44336', color: 'white', border: 'none', padding: '0 4px', borderRadius: '4px', lineHeight: '14px', cursor: 'pointer', fontSize: '10px' }}
-                >🗑</button>
-              </div>
-            )}
+          <div
+            key={idx}
+            onClick={() => {
+              setSelectedDate(new Date(shift.date));
+              setSelectedShift(shift);
+            }}
+            style={{
+              backgroundColor: shift.status === 'approved' ? '#81c784' : '#ffb74d',
+              color: 'white',
+              ...makeChipCommon,
+            }}
+            title={getVolunteerName(shift.volunteerEmail)}
+          >
+            {getVolunteerName(shift.volunteerEmail).substring(0, 4)}
           </div>
         ))}
         {otherShifts.length > 2 && (
@@ -287,10 +253,8 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
         onClickDay={(date) => {
           const dow = date.getDay();
           if (dow === 5 || dow === 6) return; // ignore Fri/Sat
-          // Block past dates
-          const today = new Date(); today.setHours(0,0,0,0);
+          // Allow viewing past dates (no warning), but actions will be disabled
           const picked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          if (picked < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
           setSelectedDate(picked);
           setSelectedShift(null);
         }}
@@ -315,100 +279,190 @@ export default function MyCalendar({ email, showCurrentMonth = false, managerMod
         }}
       />
 
-      {/* Actions area based on selection */}
-      <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-        {selectedShift ? (
-          <>
-            <span style={{ marginLeft: '8px' }}>
-              {new Date(selectedShift.date).toLocaleDateString('he-IL')} — {getVolunteerName(selectedShift.volunteerEmail)}
-            </span>
-            {managerMode && selectedShift.status === 'proposed' && (
-              <button
-                onClick={() => {
-                  const pick = new Date(new Date(selectedShift.date).getFullYear(), new Date(selectedShift.date).getMonth(), new Date(selectedShift.date).getDate());
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  if (pick < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
-                  onApproveShift && onApproveShift(toIsoLocal(pick), selectedShift.volunteerEmail);
-                }}
-                style={{ background: '#4caf50', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
-              >
-                אשר
-              </button>
-            )}
-            {managerMode && (
-              <button
-                onClick={() => {
-                  const pick = new Date(new Date(selectedShift.date).getFullYear(), new Date(selectedShift.date).getMonth(), new Date(selectedShift.date).getDate());
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  if (pick < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
-                  onRejectShift && onRejectShift(toIsoLocal(pick), selectedShift.volunteerEmail);
-                }}
-                style={{ background: '#f44336', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
-              >
-                מחק
-              </button>
-            )}
-          </>
-        ) : selectedDate ? (
-          <>
-            <span style={{ marginLeft: '8px' }}>{selectedDate.toLocaleDateString('he-IL')}</span>
-            {!hasMyShiftOn(selectedDate) && (
-            <button
-              onClick={async () => {
-                try {
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  const sel = new Date(selectedDate!.getFullYear(), selectedDate!.getMonth(), selectedDate!.getDate());
-                  if (sel < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
-                  await axios.post('/api/shifts', { action: 'propose', date: toIsoLocal(sel) });
-                  await fetchData();
-                  toast.success('ההצעה נשלחה');
-                  onShiftsChanged && onShiftsChanged();
-                } catch {
-                  toast.error('שגיאה בשליחת ההצעה');
-                }
-              }}
-              style={{ background: '#ff9800', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
-            >
-              הצע משמרת
-            </button>
-            )}
-            {managerMode && (
+      {/* Detailed day view below calendar */}
+      {selectedDate && (
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '16px', 
+          backgroundColor: '#f5f5f5', 
+          borderRadius: '8px',
+          border: '2px solid #1976d2'
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: '16px' }}>
+            {selectedDate.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </h3>
+          
+          {(() => {
+            const shiftsOnDate = shifts.filter((s) => isSameDay(new Date(s.date), selectedDate));
+            const isPast = isPastLocal(selectedDate);
+            const isMine = (s: Shift) => s.volunteerEmail === email;
+            
+            return (
               <>
-                <select
-                  value={assignVolunteerEmail}
-                  onChange={(e) => setAssignVolunteerEmail(e.target.value)}
-                  style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd' }}
-                >
-                  <option value="">בחר מתנדב</option>
-                  {volunteers.map(v => (
-                    <option key={v.email} value={v.email}>{v.name} - {v.email}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={async () => {
-                    if (!assignVolunteerEmail) { toast.error('בחר מתנדב'); return; }
-                    const today = new Date(); today.setHours(0,0,0,0);
-                    const sel = new Date(selectedDate!.getFullYear(), selectedDate!.getMonth(), selectedDate!.getDate());
-                    if (sel < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
-                    try {
-                      await axios.post('/api/shifts', { action: 'assign', date: toIsoLocal(sel), volunteerEmail: assignVolunteerEmail });
-                      setAssignVolunteerEmail('');
-                      await fetchData();
-                      toast.success('המשמרת הוקצתה');
-                      onShiftsChanged && onShiftsChanged();
-                    } catch {
-                      toast.error('שגיאה בהקצאה');
-                    }
-                  }}
-                  style={{ background: '#1976d2', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
-                >
-                  הקצה משמרת
-                </button>
+                {/* All shifts together */}
+                {shiftsOnDate.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ marginBottom: '8px', fontSize: '1rem' }}>משמרות:</h4>
+                    {shiftsOnDate.map((shift, idx) => {
+                      const mine = isMine(shift);
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            padding: '12px',
+                            marginBottom: '8px',
+                            backgroundColor: shift.status === 'approved' ? '#e8f5e9' : '#fff3cd',
+                            borderRadius: '6px',
+                            border: `2px solid ${mine ? (shift.status === 'approved' ? '#4caf50' : '#ff9800') : (shift.status === 'approved' ? '#81c784' : '#ffb74d')}`,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '8px'
+                          }}
+                        >
+                          <div>
+                            <strong>{getVolunteerName(shift.volunteerEmail)}</strong>
+                            {mine && <span style={{ marginRight: '8px', color: '#1976d2', fontWeight: 'bold' }}>(שלי)</span>}
+                          </div>
+                          {managerMode && !isPast && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {shift.status === 'proposed' && (
+                                <button
+                                  className="shift-action-btn"
+                                  onClick={() => activateShift(shift)}
+                                  style={{
+                                    backgroundColor: '#4caf50',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                  }}
+                                >
+                                  <span className="shift-btn-text">✓ אשר</span>
+                                  <span className="shift-btn-icon">✓</span>
+                                </button>
+                              )}
+                              <button
+                                className="shift-action-btn"
+                                onClick={() => deleteShiftDirect(shift)}
+                                style={{
+                                  backgroundColor: '#f44336',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '8px 16px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem'
+                                }}
+                              >
+                                <span className="shift-btn-text">🗑 מחק</span>
+                                <span className="shift-btn-icon">🗑</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {/* Empty state */}
+                {shiftsOnDate.length === 0 && (
+                  <p style={{ color: '#666', fontStyle: 'italic' }}>אין משמרות בתאריך זה</p>
+                )}
+                
+                {/* Actions for empty date or when user doesn't have a shift */}
+                {!isPast && (
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #ddd' }}>
+                    {!hasMyShiftOn(selectedDate) && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            const sel = new Date(selectedDate!.getFullYear(), selectedDate!.getMonth(), selectedDate!.getDate());
+                            if (sel < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
+                            await axios.post('/api/shifts', { action: 'propose', date: toIsoLocal(sel) });
+                            await fetchData();
+                            toast.success('ההצעה נשלחה');
+                            onShiftsChanged && onShiftsChanged();
+                          } catch {
+                            toast.error('שגיאה בשליחת ההצעה');
+                          }
+                        }}
+                        style={{
+                          backgroundColor: '#ff9800',
+                          color: 'white',
+                          border: 'none',
+                          padding: '10px 20px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          marginBottom: managerMode ? '12px' : '0'
+                        }}
+                      >
+                        הצע משמרת לתאריך זה
+                      </button>
+                    )}
+                    {managerMode && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
+                        <select
+                          value={assignVolunteerEmail}
+                          onChange={(e) => setAssignVolunteerEmail(e.target.value)}
+                          style={{
+                            padding: '10px',
+                            borderRadius: '6px',
+                            border: '1px solid #ddd',
+                            fontSize: '0.9rem',
+                            minWidth: '200px'
+                          }}
+                        >
+                          <option value="">בחר מתנדב להקצאה</option>
+                          {volunteers.map(v => (
+                            <option key={v.email} value={v.email}>{v.name} - {v.email}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={async () => {
+                            if (!assignVolunteerEmail) { toast.error('בחר מתנדב'); return; }
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            const sel = new Date(selectedDate!.getFullYear(), selectedDate!.getMonth(), selectedDate!.getDate());
+                            if (sel < today) { toast.error('אי אפשר לשנות משמרות בתאריכים שעברו'); return; }
+                            try {
+                              await axios.post('/api/shifts', { action: 'assign', date: toIsoLocal(sel), volunteerEmail: assignVolunteerEmail });
+                              setAssignVolunteerEmail('');
+                              await fetchData();
+                              toast.success('המשמרת הוקצתה');
+                              onShiftsChanged && onShiftsChanged();
+                            } catch {
+                              toast.error('שגיאה בהקצאה');
+                            }
+                          }}
+                          style={{
+                            backgroundColor: '#1976d2',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '600'
+                          }}
+                        >
+                          הקצה משמרת
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
-            )}
-          </>
-        ) : null}
-      </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* context menu removed in favor of selection actions */}
 

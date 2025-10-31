@@ -119,7 +119,7 @@ export default function Dashboard() {
       <main style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
         {profile?.isManager && <ManagerPanel key={refreshTrigger} onShiftsChanged={handleShiftsChanged} />}
         
-        <div style={{ 
+        <div className="calendar-container" style={{ 
           display: 'flex',
           flexDirection: 'row',
           gap: '20px',

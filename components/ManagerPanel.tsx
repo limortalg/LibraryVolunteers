@@ -480,6 +480,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
             {volunteers.map((volunteer, index) => (
               <div
                 key={index}
+                className="volunteer-item"
                 style={{
                   padding: '12px',
                   backgroundColor: editingVolunteer === volunteer.email ? '#e3f2fd' : '#f5f5f5',
@@ -504,7 +505,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                     ].filter(Boolean).join(', ') || 'אין'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="volunteer-buttons" style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={() => handleSendInvite(volunteer.email)}
                     disabled={!!editingVolunteer}
@@ -568,6 +569,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
               return (
                 <div
                   key={index}
+                  className="proposal-item"
                   style={{
                     padding: '12px',
                     backgroundColor: '#fff3cd',
@@ -579,9 +581,8 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                 >
                   <div>
                     <strong>{volunteer?.name || shift.volunteerEmail}</strong> - {new Date(shift.date).toLocaleDateString('he-IL')}
-                    <span style={{ marginRight: '8px', color: '#856404', fontWeight: 'bold' }}>[מוצע]</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="proposal-buttons" style={{ display: 'flex', gap: '8px' }}>
                     <button
                       onClick={() => handleApproveShift(shift.date, shift.volunteerEmail)}
                       style={{

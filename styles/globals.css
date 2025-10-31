@@ -129,3 +129,80 @@ body {
   direction: rtl;
 }
 
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  /* Stack calendars vertically on mobile */
+  .calendar-container {
+    flex-direction: column !important;
+  }
+  
+  /* Stack volunteer buttons below volunteer info on mobile */
+  .volunteer-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .volunteer-buttons {
+    margin-top: 8px !important;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  /* Stack proposal shift buttons below shift info on mobile */
+  .proposal-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .proposal-buttons {
+    margin-top: 8px !important;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  /* Make shift action buttons icon-only on mobile */
+  .shift-action-btn {
+    padding: 6px 10px !important;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .shift-action-btn .shift-btn-text {
+    display: none;
+  }
+  
+  .shift-action-btn .shift-btn-icon {
+    display: block;
+    font-size: 18px;
+  }
+  
+  /* Hide icon on desktop */
+  .shift-action-btn .shift-btn-icon {
+    display: none;
+  }
+}
+
+/* Desktop: show text, hide icon */
+.shift-action-btn .shift-btn-text {
+  display: inline;
+}
+
+.shift-action-btn .shift-btn-icon {
+  display: none;
+}
+
+/* Mobile override */
+@media (max-width: 768px) {
+  .shift-action-btn .shift-btn-text {
+    display: none !important;
+  }
+  
+  .shift-action-btn .shift-btn-icon {
+    display: block !important;
+  }
+}
+
