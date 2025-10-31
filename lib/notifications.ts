@@ -133,7 +133,10 @@ export async function sendMonthlySchedule() {
     const shifts = await getAllShifts();
     const volunteers = await getVolunteers();
     
+    // Set to first day of current month, then add 1 month to get first day of next month
+    // This avoids date overflow issues (e.g., Oct 31 -> Nov 31 would become Dec 1)
     const nextMonth = new Date();
+    nextMonth.setDate(1);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     // Keep only approved shifts of next month
     const monthlyShifts = shifts.filter(shift => {
@@ -172,13 +175,18 @@ export async function sendProposalReminder() {
     const volunteers = await getVolunteers();
     
     // Send actual email notifications
+    // Set to first day of current month, then add 1 month to get first day of next month
+    // This avoids date overflow issues (e.g., Oct 31 -> Nov 31 would become Dec 1)
     const nextMonth = new Date();
+    nextMonth.setDate(1);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     const nextMonthName = nextMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
     
     for (const volunteer of volunteers) {
       const subject = `תזכורת: נא להציע משמרות לחודש הבא`;
-      const body = `<h2>שלום ${volunteer.name}!</h2><p>זוהי תזכורת להציע משמרות לחודש ${nextMonthName}.</p><p>אנא התחבר/י למערכת והציע/י את המשמרות הזמינים לך:</p><p><a href="${process.env.NEXTAUTH_URL}">התחבר למערכת</a></p><p>תודה!</p>`;
+      const baseUrl = process.env.NEXTAUTH_URL?.trim() || 'http://localhost:3000';
+      const urlWithCacheBust = `${baseUrl}?v=${Date.now()}`;
+      const body = `<h2>שלום ${volunteer.name}!</h2><p>זוהי תזכורת להציע משמרות לחודש ${nextMonthName}.</p><p>אנא התחבר/י למערכת והציע/י את המשמרות הזמינים לך:</p><p><a href="${urlWithCacheBust}">התחבר למערכת</a></p><p>תודה!</p>`;
       await sendEmail(volunteer.email, subject, body);
     }
     
@@ -293,7 +301,9 @@ export async function sendEmail(to: string, subject: string, body: string) {
 export async function sendInvite(email: string, volunteerName?: string) {
   try {
     const subject = 'הזמנה להתנדבות בספריה';
-    const body = `<h2>שלום ${volunteerName || ''}!</h2><p>הוזמנת להצטרף למערכת ניהול המשמרות של הספריה.</p><p>אנא התחבר/י דרך: <a href="${process.env.NEXTAUTH_URL}">${process.env.NEXTAUTH_URL}</a></p><p>ניתן להתחבר באמצעות חשבון Google שלך.</p><p>תודה!</p>`;
+    const baseUrl = process.env.NEXTAUTH_URL?.trim() || 'http://localhost:3000';
+    const urlWithCacheBust = `${baseUrl}?v=${Date.now()}`;
+    const body = `<h2>שלום ${volunteerName || ''}!</h2><p>הוזמנת להצטרף למערכת ניהול המשמרות של הספריה.</p><p>אנא התחבר/י דרך: <a href="${urlWithCacheBust}">${baseUrl}</a></p><p>ניתן להתחבר באמצעות חשבון Google שלך.</p><p>תודה!</p>`;
     return await sendEmail(email, subject, body);
   } catch (error) {
     console.error('Error sending invite:', error);

@@ -30,12 +30,7 @@ button {
   font-family: inherit;
 }
 
-/* Hebrew font support */
-@font-face {
-  font-family: 'Assistant';
-  src: url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
-}
-
+/* Hebrew font support - loaded via link tag in _document.tsx */
 body {
   font-family: 'Assistant', sans-serif;
 }
