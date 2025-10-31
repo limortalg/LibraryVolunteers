@@ -32,6 +32,8 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
   // assignment is now done directly from the main calendar; no internal date picker
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVolunteer, setEditingVolunteer] = useState<string | null>(null);
+  const [volunteersExpanded, setVolunteersExpanded] = useState(false); // Collapsed by default
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(true); // Expanded by default
   const [newVolunteer, setNewVolunteer] = useState({
     name: '',
     phone: '',
@@ -83,9 +85,6 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
     try {
       await axios.post('/api/volunteers', newVolunteer);
       toast.success('המתנדב נוסף בהצלחה');
-      
-      // Automatically send invite to new volunteer
-      await handleSendInvite(newVolunteer.email);
       
       setNewVolunteer({
         name: '',
@@ -472,12 +471,20 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h3>רשימת מתנדבים ({volunteers.length})</h3>
-        {volunteers.length === 0 ? (
-          <p>אין מתנדבים רשומים</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {volunteers.map((volunteer, index) => (
+        <h3 
+          style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={() => setVolunteersExpanded(!volunteersExpanded)}
+        >
+          <span>{volunteersExpanded ? '▼' : '▶'}</span>
+          <span>רשימת מתנדבים ({volunteers.length})</span>
+        </h3>
+        {volunteersExpanded && (
+          <>
+            {volunteers.length === 0 ? (
+              <p>אין מתנדבים רשומים</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {volunteers.map((volunteer, index) => (
               <div
                 key={index}
                 className="volunteer-item"
@@ -550,8 +557,10 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -559,12 +568,20 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
         <h3>ניהול משמרות</h3>
         {/* Assign shift moved to main calendar actions; no inline date picker */}
 
-        <h4>הצעות ממתינות לאישור</h4>
-        {proposedShifts.length === 0 ? (
-          <p>אין הצעות ממתינות</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {proposedShifts.map((shift, index) => {
+        <h4 
+          style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={() => setSuggestionsExpanded(!suggestionsExpanded)}
+        >
+          <span>{suggestionsExpanded ? '▼' : '▶'}</span>
+          <span>הצעות ממתינות לאישור ({proposedShifts.length})</span>
+        </h4>
+        {suggestionsExpanded && (
+          <>
+            {proposedShifts.length === 0 ? (
+              <p>אין הצעות ממתינות</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {proposedShifts.map((shift, index) => {
               const volunteer = volunteers.find(v => v.email === shift.volunteerEmail);
               return (
                 <div
@@ -594,7 +611,7 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                         cursor: 'pointer'
                       }}
                     >
-                      אישר
+                      אשר
                     </button>
                     <button
                       onClick={() => handleRejectShift(shift.date, shift.volunteerEmail)}
@@ -611,9 +628,11 @@ export default function ManagerPanel({ onShiftsChanged }: ManagerPanelProps) {
                     </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

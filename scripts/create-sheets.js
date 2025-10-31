@@ -62,7 +62,7 @@ async function createSheets() {
       range: 'Volunteers!A1:I1',
       valueInputOption: 'RAW',
       requestBody: {
-        values: [['Name', 'Phone', 'Email', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'IsManager']],
+        values: [['Name', 'Phone', 'Email', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'IsManager']],
       },
     });
 

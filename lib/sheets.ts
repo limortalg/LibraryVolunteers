@@ -54,17 +54,19 @@ export async function getVolunteers(): Promise<Volunteer[]> {
     });
 
     const rows = response.data.values || [];
-    return rows.map((row: any[]) => ({
-      name: row[0] || '',
-      phone: row[1] || '',
-      email: row[2] || '',
-      monday: row[3] === 'TRUE',
-      tuesday: row[4] === 'TRUE',
-      wednesday: row[5] === 'TRUE',
-      thursday: row[6] === 'TRUE',
-      friday: row[7] === 'TRUE',
-      isManager: row[8] === 'TRUE',
-    }));
+    return rows
+      .filter((row: any[]) => row && row[2] && row[2].trim()) // Filter out empty rows (need at least an email)
+      .map((row: any[]) => ({
+        name: row[0] || '',
+        phone: row[1] || '',
+        email: row[2] || '',
+        monday: row[3] === 'TRUE',
+        tuesday: row[4] === 'TRUE',
+        wednesday: row[5] === 'TRUE',
+        thursday: row[6] === 'TRUE',
+        friday: row[7] === 'TRUE',
+        isManager: row[8] === 'TRUE',
+      }));
   } catch (error) {
     console.error('Error getting volunteers:', error);
     return [];
@@ -132,12 +134,16 @@ export async function updateVolunteer(email: string, volunteer: Volunteer): Prom
     });
 
     const rows = response.data.values || [];
+    // Find by email (column 2, index 2 in the row array)
+    // rows[0] is header (sheet row 1), rows[1] is first volunteer (sheet row 2), etc.
     const rowIndex = rows.findIndex((row: any[]) => row[2] === email);
 
-    if (rowIndex !== -1) {
+    if (rowIndex !== -1 && rowIndex > 0) {
+      // rowIndex is 0-based in array (0 = header, 1 = first volunteer)
+      // Sheet row number = rowIndex + 1 (header is row 1, first volunteer is row 2)
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Volunteers!A${rowIndex + 2}:I${rowIndex + 2}`,
+        range: `Volunteers!A${rowIndex + 1}:I${rowIndex + 1}`,
         valueInputOption: 'RAW',
         requestBody: {
           values: [[
@@ -179,12 +185,39 @@ export async function deleteVolunteer(email: string): Promise<boolean> {
     });
 
     const rows = response.data.values || [];
+    // Find by email (column 2, index 2 in the row array)
+    // rows[0] is header (sheet row 1), rows[1] is first volunteer (sheet row 2), etc.
     const rowIndex = rows.findIndex((row: any[]) => row[2] === email);
 
-    if (rowIndex !== -1) {
-      await sheets.spreadsheets.values.clear({
+    if (rowIndex !== -1 && rowIndex > 0) {
+      // rowIndex is 0-based in array (0 = header, 1 = first volunteer)
+      // Sheet row number = rowIndex + 1 (header is row 1, first volunteer is row 2)
+      // Actually delete the row instead of just clearing it
+      const sheetRowNumber = rowIndex + 1; // Convert array index to sheet row number
+      
+      // Get the sheet ID for the Volunteers sheet
+      const spreadsheet = await sheets.spreadsheets.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Volunteers!A${rowIndex + 2}:I${rowIndex + 2}`,
+      });
+      const volunteersSheet = spreadsheet.data.sheets?.find(
+        (sheet: any) => sheet.properties.title === 'Volunteers'
+      );
+      const sheetId = volunteersSheet?.properties.sheetId || 0;
+      
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [{
+            deleteDimension: {
+              range: {
+                sheetId: sheetId,
+                dimension: 'ROWS',
+                startIndex: sheetRowNumber - 1, // 0-based index (sheet row 2 = index 1)
+                endIndex: sheetRowNumber, // endIndex is exclusive
+              },
+            },
+          }],
+        },
       });
       return true;
     }
@@ -233,12 +266,14 @@ export async function getAllShifts(): Promise<Shift[]> {
     });
 
     const rows = response.data.values || [];
-    return rows.map((row: any[]) => ({
-      date: row[0] || '',
-      volunteerEmail: row[1] || '',
-      status: row[2] as 'proposed' | 'approved' | 'assigned',
-      monthYear: row[3] || '',
-    }));
+    return rows
+      .filter((row: any[]) => row && row[0] && row[1]) // Filter out empty rows (need at least date and email)
+      .map((row: any[]) => ({
+        date: row[0] || '',
+        volunteerEmail: row[1] || '',
+        status: row[2] as 'proposed' | 'approved' | 'assigned',
+        monthYear: row[3] || '',
+      }));
   } catch (error) {
     console.error('Error getting all shifts:', error);
     return [];
@@ -397,9 +432,34 @@ export async function rejectShift(date: string, email: string): Promise<boolean>
     }
 
     if (rowIndex !== -1) {
-      await sheets.spreadsheets.values.clear({
+      // rowIndex is 0-based in data rows (starting from row 2)
+      // So actual spreadsheet row = rowIndex + 2 (header is row 1)
+      // Actually delete the row instead of just clearing it
+      const sheetRowNumber = rowIndex + 2;
+      
+      // Get the sheet ID for the Shifts sheet
+      const spreadsheet = await sheets.spreadsheets.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Shifts!A${rowIndex + 2}:D${rowIndex + 2}`,
+      });
+      const shiftsSheet = spreadsheet.data.sheets?.find(
+        (sheet: any) => sheet.properties.title === 'Shifts'
+      );
+      const sheetId = shiftsSheet?.properties.sheetId || 0;
+      
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [{
+            deleteDimension: {
+              range: {
+                sheetId: sheetId,
+                dimension: 'ROWS',
+                startIndex: sheetRowNumber - 1, // 0-based index (sheet row 2 = index 1)
+                endIndex: sheetRowNumber, // endIndex is exclusive
+              },
+            },
+          }],
+        },
       });
       return true;
     }
